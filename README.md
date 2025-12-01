@@ -22,7 +22,7 @@ StemLab is a powerful, local Windows application for separating audio tracks int
 *   **Professional Workflow**:
     *   **Batch Processing**: Drag & drop multiple files.
     *   **Format Support**: Export as WAV (Lossless) or MP3 (320kbps).
-    *   **GPU Acceleration**: Auto-detects NVIDIA GPUs for faster processing.
+    *   **GPU Acceleration**: Auto-detects NVIDIA GPUs for faster processing. (Testing)
     *   **Smart Queue**: Manage your jobs with progress bars and cancellation.
 
 ## Requirements
@@ -35,7 +35,8 @@ StemLab is a powerful, local Windows application for separating audio tracks int
 ## Installation
 
 ### Option 1: Pre-built Executable
-Download the latest `StemLab.exe` from the [Releases](https://github.com/sunsetsacoustic/StemLab/releases) page.
+Purchase the ready-to-run `StemLab.exe` from **[Gumroad](https://justinmurray99.gumroad.com/l/StemLab)**.
+(Instant download, no setup required).
 
 ### Option 2: Build from Source
 
