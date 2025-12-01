@@ -8,6 +8,7 @@ StemLab is a powerful, local Windows application for separating audio tracks int
 
 
 Demo: https://youtu.be/y9qL7bGh40Y 
+Discord: https://discord.gg/kZSc8sKUZR
 
 ## Features
 
