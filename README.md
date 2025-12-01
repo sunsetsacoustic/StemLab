@@ -84,7 +84,7 @@ If you want to modify the code or build it yourself, follow these steps:
     *   Install all required libraries (`PyQt6`, `torch`, `demucs`, `audio-separator`, etc.).
     *   Package the application into a single executable file using PyInstaller.
 
-    ** Windows: **
+    **Windows:**
 
         Double-click **`install_and_build.cmd`**.
 
