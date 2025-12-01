@@ -88,7 +88,7 @@ If you want to modify the code or build it yourself, follow these steps:
 
         Double-click **`install_and_build.cmd`**.
 
-    ** Linux/Mac:: **
+    ** Linux/Mac: **
 
         ```
         chmod +x install_and_build.sh
