@@ -66,7 +66,6 @@ If you want to modify the code or build it yourself, follow these steps:
     *   Package the application into a single `.exe` file using PyInstaller.
 
 4.  **Run the App**:
-    *   **From Source**: Double-click `run_cpu.bat`.
     *   **Compiled EXE**: Check the `dist` folder for `StemLab.exe`.
 
 ## Credits
