@@ -1,0 +1,9 @@
+PyQt6
+demucs
+audio-separator[gpu]
+torch
+torchaudio
+numpy
+soundfile
+pydub
+pyinstaller

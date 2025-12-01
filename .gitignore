@@ -1,0 +1,36 @@
+# Virtual Environments
+venv/
+venv_cpu/
+venv_gpu/
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / Build
+build/
+dist/
+*.spec
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# Logs and Temp
+*.log
+temp/
+tmp/
+
+# Large Audio Files
+*.wav
+*.mp3
+*.flac
+*.m4a
+test_audio/
+test_audio - Stems/
+
+# Local Config
+version_info.txt
