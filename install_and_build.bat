@@ -1,7 +1,7 @@
 @echo off
 setlocal
 
-echo Always run from the directory where this script lives
+rem Run from the directory where this script lives
 cd /d "%~dp0"
 
 set "VENV_NAME=venv_cpu"
@@ -10,9 +10,9 @@ echo ==========================================
 echo StemLab Setup / Build Script (CPU / GPU)
 echo ==========================================
 
-rem ------------------------------------------
-rem Argument parsing
-rem ------------------------------------------
+echo ------------------------------------------
+echo Argument parsing
+echo ------------------------------------------
 set "ARG_CPU="
 set "ARG_GPU="
 set "ARG_BUILD_EXE="
@@ -23,13 +23,13 @@ set "ARG_REUSE_VENV="
 :parse_args
 if "%~1"=="" goto after_args
 
-if /I "%~1"=="--help" goto show_help
-if /I "%~1"=="--cpu"           set "ARG_CPU=1"
-if /I "%~1"=="--gpu"           set "ARG_GPU=1"
-if /I "%~1"=="--build-exe"     set "ARG_BUILD_EXE=1"
-if /I "%~1"=="--no-build-exe"  set "ARG_NO_BUILD_EXE=1"
+if /I "%~1"=="--help"         goto show_help
+if /I "%~1"=="--cpu"          set "ARG_CPU=1"
+if /I "%~1"=="--gpu"          set "ARG_GPU=1"
+if /I "%~1"=="--build-exe"    set "ARG_BUILD_EXE=1"
+if /I "%~1"=="--no-build-exe" set "ARG_NO_BUILD_EXE=1"
 if /I "%~1"=="--recreate-venv" set "ARG_RECREATE_VENV=1"
-if /I "%~1"=="--reuse-venv"    set "ARG_REUSE_VENV=1"
+if /I "%~1"=="--reuse-venv"   set "ARG_REUSE_VENV=1"
 
 shift
 goto parse_args
@@ -66,15 +66,22 @@ echo.
 echo ------------------------------------------
 echo Step 2: Create or reuse virtual environment
 echo ------------------------------------------
+set "DID_ATTEMPT_CREATE="
+
 if exist "%VENV_NAME%" (
     echo Found existing virtual environment "%VENV_NAME%".
     call :handle_existing_venv
 ) else (
+    set "DID_ATTEMPT_CREATE=1"
     call :create_venv
 )
 
 if not exist "%VENV_NAME%" (
-    echo ERROR: Virtual environment "%VENV_NAME%" does not exist after creation attempt.
+    if defined DID_ATTEMPT_CREATE (
+        echo ERROR: Virtual environment "%VENV_NAME%" could not be created.
+    ) else (
+        echo ERROR: Virtual environment "%VENV_NAME%" does not exist.
+    )
     goto end
 )
 
@@ -102,14 +109,7 @@ if defined ARG_GPU (
     if defined ARG_CPU (
         set "TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu"
     ) else (
-        echo.
-        rem *** FIXED PROMPT (no parentheses) ***
-        set /p CHOICE_GPU=Install GPU-accelerated PyTorch for NVIDIA - large download? [y/N]: 
-        if /I "%CHOICE_GPU%"=="Y" (
-            set "TORCH_INDEX_URL=https://download.pytorch.org/whl/cu121"
-        ) else (
-            set "TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu"
-        )
+        call :select_torch_index
     )
 )
 
@@ -142,9 +142,7 @@ if defined ARG_BUILD_EXE (
     if defined ARG_NO_BUILD_EXE (
         set "DO_BUILD_EXE="
     ) else (
-        echo.
-        set /p CHOICE_BUILD=Build standalone StemLab.exe with PyInstaller now? [y/N]: 
-        if /I "%CHOICE_BUILD%"=="Y" set "DO_BUILD_EXE=1"
+        call :ask_build_exe
     )
 )
 
@@ -200,6 +198,7 @@ goto end
 if defined ARG_RECREATE_VENV (
     echo Recreating venv because --recreate-venv was specified...
     rmdir /s /q "%VENV_NAME%"
+    set "DID_ATTEMPT_CREATE=1"
     call :create_venv
     goto :eof
 )
@@ -213,6 +212,7 @@ set /p REUSE_VENV=Reuse it instead of recreating? [Y/n]:
 if /I "%REUSE_VENV%"=="N" (
     echo Removing old "%VENV_NAME%"...
     rmdir /s /q "%VENV_NAME%"
+    set "DID_ATTEMPT_CREATE=1"
     call :create_venv
 ) else (
     echo Reusing existing environment.
@@ -226,6 +226,24 @@ echo Creating virtual environment "%VENV_NAME%"...
 if errorlevel 1 (
     echo ERROR: Failed to create virtual environment.
 )
+goto :eof
+
+
+:select_torch_index
+echo.
+set /p CHOICE_GPU=Install GPU-accelerated PyTorch for NVIDIA - large download? [y/N]: 
+if /I "%CHOICE_GPU%"=="Y" (
+    set "TORCH_INDEX_URL=https://download.pytorch.org/whl/cu121"
+) else (
+    set "TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu"
+)
+goto :eof
+
+
+:ask_build_exe
+echo.
+set /p CHOICE_BUILD=Build standalone StemLab.exe with PyInstaller now? [y/N]: 
+if /I "%CHOICE_BUILD%"=="Y" set "DO_BUILD_EXE=1"
 goto :eof
 
 
