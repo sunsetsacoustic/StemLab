@@ -198,7 +198,7 @@ echo "Building PyInstaller binary (no .exe suffix on *nix)..."
 
 pyinstaller --clean --noconsole --onefile \
   --name "$NAME" \
-  "${VERSION_FILE_ARGS[@]}" \
+  "${VERSION_FILE_ARGS[@]+"${VERSION_FILE_ARGS[@]}"}" \
   --add-data "src:src" \
   --add-data "resources:resources" \
   --collect-all demucs \
