@@ -42,7 +42,7 @@ VirusTotal for Exe: https://www.virustotal.com/gui/file/ffb5e465ced2c8bf6b7c56b6
 ## Installation
 
 ### Option 1: Pre-built Executable
-Purchase the ready-to-run `StemLab.exe` from **[Gumroad](https://justinmurray99.gumroad.com/l/StemLab)**.
+Purchase the ready-to-run `StemLab.exe` from **[Gumroad](https://justinmurray99.gumroad.com/l/StemLab) or [KoFi](https://ko-fi.com/s/1cbb0a5041)**.
 (Instant download, no setup required).
 
 ### Option 2: Build from Source
