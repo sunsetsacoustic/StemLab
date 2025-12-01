@@ -79,17 +79,26 @@ If you want to modify the code or build it yourself, follow these steps:
 3.  **Run the Build Script**:
     We provide a robust build script that handles virtual environment creation and dependency installation automatically.
 
-    Double-click **`install_and_build.cmd`**.
-
     This script will:
     *   Create a local virtual environment (`venv_cpu` or `venv_gpu` depending on your selection).
     *   Install all required libraries (`PyQt6`, `torch`, `demucs`, `audio-separator`, etc.).
-    *   Package the application into a single `.exe` file using PyInstaller.
+    *   Package the application into a single executable file using PyInstaller.
+
+    ** Windows: **
+
+        Double-click **`install_and_build.cmd`**.
+
+    ** Linux/Mac:: **
+
+        ```
+        chmod +x install_and_build.sh
+        ./install_and_build.sh
+        ```
 
 4.  **Run the App**:
-    *   **Compiled EXE**: Check the `dist` folder for `StemLab.exe`.
+    *   **Compiled Executable**: Check the `dist` folder for `StemLab.exe` (Windows) or `StemLab` (Mac/Linux).
 
-Run `install_and_build.cmd --help` for a full list of installation options.
+Run `install_and_build.cmd --help` or `./install_and_build.sh --help` for a full list of installation options.
 
 ## Credits
 
