@@ -46,9 +46,7 @@ These are already in active development and dropping over the next few weeks:
 | **GPU acceleration (full)** – 20–50× real-time on NVIDIA cards | Testing        | January 2026 |
 | **Mac & Linux versions**      | Planned        | Q1 2026 |
 
-Once the first five land → we’re raising the paid version to **$49 launch / $69 regular**.
 
-The free open-source Community edition will always stay 100% free and fully featured.
 
 Star ⭐ and watch the repo to get notified the second these drop.
 
