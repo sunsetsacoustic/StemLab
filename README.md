@@ -32,6 +32,26 @@ VirusTotal for Exe: https://www.virustotal.com/gui/file/ffb5e465ced2c8bf6b7c56b6
     *   **GPU Acceleration**: Auto-detects NVIDIA GPUs for faster processing. (Testing)
     *   **Smart Queue**: Manage your jobs with progress bars and cancellation.
 
+## 🚀 Coming Soon – StemLab Pro Roadmap (2025)
+
+These are already in active development and dropping over the next few weeks:
+
+| Feature                        | Status         | Expected |
+|-------------------------------|----------------|----------|
+| **Stem Vault** – searchable private library of every stem you’ve ever made (BPM, key, tags, instant preview) | Building       | December 2025 |
+| **Smart Stem Organizer** – auto-creates perfect folders + one-click FL Studio / Ableton project files with stems pre-loaded | Building       | December 2025 |
+| **Drum Split Mode** – Kick | Snare | Hi-hat | Cymbals (Bandit v2 / DrumDemucs) | Building       | December 2025 |
+| **Built-in waveform player** – audition any stem without leaving the app | Building       | December 2025 |
+| **One-click TikTok / Reels export** – 60-second hook with clean vocal + beat | Building       | December 2025 |
+| **GPU acceleration (full)** – 20–50× real-time on NVIDIA cards | Testing        | January 2026 |
+| **Mac & Linux versions**      | Planned        | Q1 2026 |
+
+Once the first five land → we’re raising the paid version to **$49 launch / $69 regular**.
+
+The free open-source Community edition will always stay 100% free and fully featured.
+
+Star ⭐ and watch the repo to get notified the second these drop.
+
 ## Requirements
 
 *   **OS**: Windows 10 or 11 (64-bit)
