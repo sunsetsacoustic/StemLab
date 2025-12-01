@@ -1,6 +1,6 @@
 # StemLab v1.0
 
-**Professional-grade AI stem separation. Local. Unlimited. One-time payment.**
+**Professional-grade AI stem separation. Local. Unlimited.**
 
 StemLab is a powerful, local Windows application for separating audio tracks into individual stems (Vocals, Drums, Bass, Other). It leverages state-of-the-art AI models (Demucs and MDX-Net) to deliver studio-quality results without monthly subscriptions or cloud upload limits.
 
