@@ -195,14 +195,22 @@ rem Default to standard pip
 set "PIP_INSTALL_CMD=python -m pip install"
 
 echo Checking for 'uv' (fast package installer)...
-python -m pip install uv >nul 2>&1
+uv --version >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
-    echo 'uv' installed successfully. Using uv for fast installation.
+    echo 'uv' is already installed. Using uv for fast installation.
     set "PIP_INSTALL_CMD=uv pip install"
 ) else (
-    echo 'uv' installation failed or skipped. Falling back to standard pip.
-    echo Upgrading pip...
-    python -m pip install --upgrade pip >nul
+    echo 'uv' not found. Attempting to install 'uv'...
+    python -m pip install uv >nul 2>&1
+    uv --version >nul 2>&1
+    if %ERRORLEVEL% EQU 0 (
+        echo 'uv' installed successfully. Using uv for fast installation.
+        set "PIP_INSTALL_CMD=uv pip install"
+    ) else (
+        echo 'uv' installation failed or skipped. Falling back to standard pip.
+        echo Upgrading pip...
+        python -m pip install --upgrade pip >nul
+    )
 )
 
 rem ------------------------------------------
