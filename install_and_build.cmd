@@ -429,15 +429,16 @@ echo.
 echo Usage: %~nx0 [options]
 echo.
 echo Options:
-echo   --cpu             Force CPU-only PyTorch wheels (no CUDA).
-echo   --gpu             Use GPU (%CUDA_VER%) PyTorch wheels and venv_gpu.
-echo   --recreate-venv   Recreate the virtualenv if it exists.
-echo   --reuse-venv      Reuse an existing virtualenv if it exists.
-echo   --build-exe       Build StemLab.exe with PyInstaller.
-echo   --no-build-exe    Do not build EXE; just set up environment.
-echo   --help            Show this help.
+echo   --cpu                Force CPU-only PyTorch wheels (no CUDA).
+echo   --gpu                Use GPU (%CUDA_VER%) PyTorch wheels and venv_gpu.
+echo   --recreate-venv      Recreate the virtualenv if it exists.
+echo   --reuse-venv         Reuse an existing virtualenv if it exists.
+echo   --build-exe          Build StemLab.exe with PyInstaller.
+echo   --no-build-exe       Do not build EXE; just set up environment.
 echo   --install-ffmpeg     Automatically install FFmpeg via winget if missing.
 echo   --no-install-ffmpeg  Do not install FFmpeg even if it is missing.
+echo   --help               Show this help.
+
 echo.
 echo Without --cpu/--gpu, you will be prompted interactively for CPU vs GPU.
 echo.
