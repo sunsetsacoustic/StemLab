@@ -1,10 +1,18 @@
 @echo off
 setlocal
 
+rem ==========================================
+rem CONFIGURATION
+rem ==========================================
+rem Define the CUDA version for PyTorch (e.g., cu118, cu121, cu124)
+set "CUDA_VER=cu121"
+
+rem Base URL for PyTorch wheels
+set "TORCH_BASE_URL=https://download.pytorch.org/whl"
+rem ==========================================
+
 rem Run from the directory where this script lives
 cd /d "%~dp0"
-
-set "VENV_NAME=venv_cpu"
 
 echo ==========================================
 echo StemLab Setup / Build Script (CPU / GPU)
@@ -38,7 +46,7 @@ goto parse_args
 echo.
 
 rem ------------------------------------------
-rem Resolve conflicting flags (nitpicks)
+rem Resolve conflicting flags
 rem ------------------------------------------
 if defined ARG_CPU (
   if defined ARG_GPU (
@@ -61,18 +69,31 @@ if defined ARG_RECREATE_VENV (
   )
 )
 
+rem ------------------------------------------
+rem Decide venv name (CPU vs GPU)
+rem ------------------------------------------
+set "VENV_NAME=venv_cpu"
+if defined ARG_GPU (
+  set "VENV_NAME=venv_gpu"
+)
+
+echo Using virtual environment folder: %VENV_NAME%
+echo.
+
 echo ------------------------------------------
 echo Step 1: Locate Python 3.10
 echo ------------------------------------------
 set "PY_CMD="
 
+rem Prefer the launcher explicitly targeting 3.10
 py -3.10 --version >nul 2>&1
 if not errorlevel 1 (
     set "PY_CMD=py -3.10"
 )
 
+rem Fallback: check that bare "python" is exactly 3.10.x
 if not defined PY_CMD (
-    python --version 2>nul | find "3.10" >nul 2>&1
+    python -c "import sys; import sys; sys.exit(0 if sys.version_info[0]==3 and sys.version_info[1]==10 else 1)" >nul 2>&1
     if not errorlevel 1 (
         set "PY_CMD=python"
     )
@@ -120,36 +141,74 @@ echo ------------------------------------------
 echo Step 3: Install / update dependencies
 echo ------------------------------------------
 echo.
-echo Upgrading pip...
-python -m pip install --upgrade pip
-if errorlevel 1 goto end
 
-echo Choose CPU vs GPU PyTorch
+rem ------------------------------------------
+rem Setup Install Command (uv vs pip)
+rem ------------------------------------------
+rem Default to standard pip
+set "PIP_INSTALL_CMD=python -m pip install"
+
+echo Checking for 'uv' (fast package installer)...
+rem Try to install uv into the venv. It is very small and speeds up the rest significantly.
+python -m pip install uv >nul 2>&1
+if not errorlevel 1 (
+    echo 'uv' installed successfully. Using uv for fast installation.
+    set "PIP_INSTALL_CMD=uv pip install"
+) else (
+    echo 'uv' installation failed or skipped. Falling back to standard pip.
+    echo Upgrading pip...
+    python -m pip install --upgrade pip
+)
+
+rem ------------------------------------------
+rem Select Torch/ONNX Targets
+rem ------------------------------------------
+echo.
+echo Choose CPU vs GPU Configuration...
 set "TORCH_INDEX_URL="
+set "ONNX_PACKAGE=onnxruntime"
 
 if defined ARG_GPU (
-    set "TORCH_INDEX_URL=https://download.pytorch.org/whl/cu121"
+    set "TORCH_INDEX_URL=%TORCH_BASE_URL%/%CUDA_VER%"
+    set "ONNX_PACKAGE=onnxruntime-gpu"
 ) else (
     if defined ARG_CPU (
-        set "TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu"
+        set "TORCH_INDEX_URL=%TORCH_BASE_URL%/cpu"
     ) else (
         call :select_torch_index
     )
 )
 
+rem Double check: if select_torch_index set the URL to cuda, we must switch ONNX to gpu
+if "%TORCH_INDEX_URL%"=="%TORCH_BASE_URL%/%CUDA_VER%" (
+    set "ONNX_PACKAGE=onnxruntime-gpu"
+)
+
 echo.
+echo Target Configuration:
+echo   PyTorch URL: %TORCH_INDEX_URL%
+echo   ONNX Runtime: %ONNX_PACKAGE%
+echo.
+
+rem ------------------------------------------
+rem Install Packages
+rem ------------------------------------------
+
 echo Installing core packages (PyQt6, soundfile)...
-python -m pip install PyQt6 soundfile
+%PIP_INSTALL_CMD% PyQt6 soundfile
 if errorlevel 1 goto end
 
 echo.
-echo Installing PyTorch from %TORCH_INDEX_URL% ...
-python -m pip install torch torchvision torchaudio --index-url %TORCH_INDEX_URL%
+echo Installing PyTorch...
+%PIP_INSTALL_CMD% torch torchvision torchaudio --index-url %TORCH_INDEX_URL%
 if errorlevel 1 goto end
 
 echo.
-echo Installing Demucs, Audio Separator, PyInstaller, ONNX Runtime...
-python -m pip install demucs audio-separator pyinstaller onnxruntime
+echo Installing Demucs, Audio Separator, PyInstaller, and %ONNX_PACKAGE%...
+rem IMPORTANT: We repeat --index-url here. If we don't, pip might find a newer 
+rem version of 'torch' on the public PyPi (CPU only) required by these libs 
+rem and overwrite the CUDA version we just installed.
+%PIP_INSTALL_CMD% demucs audio-separator pyinstaller %ONNX_PACKAGE% --index-url %TORCH_INDEX_URL%
 if errorlevel 1 goto end
 
 echo.
@@ -179,6 +238,20 @@ if not defined DO_BUILD_EXE (
     goto end
 )
 
+rem Defensive checks before PyInstaller
+if not exist "main.py" (
+    echo ERROR: main.py not found in %cd%.
+    goto end
+)
+if not exist "src" (
+    echo ERROR: src directory not found in %cd%.
+    goto end
+)
+if not exist "resources" (
+    echo ERROR: resources directory not found in %cd%.
+    goto end
+)
+
 echo.
 echo Building EXE with PyInstaller...
 
@@ -188,6 +261,7 @@ if exist "version_info.txt" (
     set "PYI_VERSION_FILE=--version-file version_info.txt"
 )
 
+rem Note: We explicitly quote the variables to handle spaces or empty values gracefully
 pyinstaller --clean --noconsole --onefile ^
     --name "%PYI_NAME%" ^
     %PYI_VERSION_FILE% ^
@@ -217,6 +291,10 @@ echo You can find %PYI_NAME%.exe in the dist folder.
 echo ==========================================
 goto end
 
+
+rem ==========================================
+rem SUBROUTINES
+rem ==========================================
 
 :handle_existing_venv
 if defined ARG_RECREATE_VENV (
@@ -255,11 +333,13 @@ goto :eof
 
 :select_torch_index
 echo.
+echo PyTorch CUDA Configuration: %CUDA_VER%
 set /p CHOICE_GPU=Install GPU-accelerated PyTorch for NVIDIA - large download? [y/N]: 
 if /I "%CHOICE_GPU%"=="Y" (
-    set "TORCH_INDEX_URL=https://download.pytorch.org/whl/cu121"
+    set "TORCH_INDEX_URL=%TORCH_BASE_URL%/%CUDA_VER%"
+    set "ONNX_PACKAGE=onnxruntime-gpu"
 ) else (
-    set "TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu"
+    set "TORCH_INDEX_URL=%TORCH_BASE_URL%/cpu"
 )
 goto :eof
 
@@ -276,13 +356,15 @@ echo.
 echo Usage: %~nx0 [options]
 echo.
 echo Options:
-echo   --cpu             Use CPU-only PyTorch (default if no choice given)
-echo   --gpu             Use GPU (CUDA/cu121) PyTorch
-echo   --recreate-venv   Recreate venv_cpu if it exists
-echo   --reuse-venv      Reuse existing venv_cpu if it exists
-echo   --build-exe       Build StemLab.exe with PyInstaller
-echo   --no-build-exe    Do not build EXE; just set up environment
-echo   --help            Show this help
+echo   --cpu             Force CPU-only PyTorch wheels (no CUDA).
+echo   --gpu             Use GPU (%CUDA_VER%) PyTorch wheels and venv_gpu.
+echo   --recreate-venv   Recreate the virtualenv if it exists.
+echo   --reuse-venv      Reuse an existing virtualenv if it exists.
+echo   --build-exe       Build StemLab.exe with PyInstaller.
+echo   --no-build-exe    Do not build EXE; just set up environment.
+echo   --help            Show this help.
+echo.
+echo Without --cpu/--gpu, you will be prompted interactively for CPU vs GPU.
 echo.
 echo Examples:
 echo   %~nx0 --cpu --recreate-venv --no-build-exe
