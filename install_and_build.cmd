@@ -1,5 +1,12 @@
 @echo off
-setlocal
+rem -------------------------------------------------------------------
+rem StemLab setup/build script (CPU/GPU)
+rem This script is designed to be run from its own directory.  It must
+rem be saved with a .cmd extension so that CMD.EXE will reset the
+rem internal %ERRORLEVEL% after each command
+rem -------------------------------------------------------------------
+
+setlocal EnableExtensions
 
 rem ==========================================
 rem CONFIGURATION
@@ -11,7 +18,7 @@ rem Base URL for PyTorch wheels
 set "TORCH_BASE_URL=https://download.pytorch.org/whl"
 rem ==========================================
 
-rem Run from the directory where this script lives
+rem Ensure we are in the directory containing this script
 cd /d "%~dp0"
 
 echo ==========================================
@@ -21,6 +28,7 @@ echo ==========================================
 echo ------------------------------------------
 echo Argument parsing
 echo ------------------------------------------
+rem Initialize flags to empty strings
 set "ARG_CPU="
 set "ARG_GPU="
 set "ARG_BUILD_EXE="
@@ -70,14 +78,44 @@ if defined ARG_RECREATE_VENV (
 )
 
 rem ------------------------------------------
-rem Decide venv name (CPU vs GPU)
+rem Step 0: Determine Mode (CPU vs GPU)
 rem ------------------------------------------
-set "VENV_NAME=venv_cpu"
-if defined ARG_GPU (
-  set "VENV_NAME=venv_gpu"
+rem If neither flag was set, prompt the user interactively.
+
+if defined ARG_CPU goto mode_decided
+if defined ARG_GPU goto mode_decided
+
+echo No CPU/GPU flag specified.
+set /p CHOICE_GPU=Install GPU-accelerated PyTorch (%CUDA_VER%)? [y/N]: 
+if /I "%CHOICE_GPU%"=="Y" (
+    set "ARG_GPU=1"
+) else (
+    set "ARG_CPU=1"
 )
 
-echo Using virtual environment folder: %VENV_NAME%
+:mode_decided
+rem Now we are guaranteed to have either ARG_CPU or ARG_GPU set.
+
+rem ------------------------------------------
+rem Configure Venv Name and URLs based on Mode
+rem ------------------------------------------
+set "VENV_NAME=venv_cpu"
+set "TORCH_INDEX_URL=%TORCH_BASE_URL%/cpu"
+set "ONNX_PACKAGE=onnxruntime"
+
+if defined ARG_GPU (
+  set "VENV_NAME=venv_gpu"
+  set "TORCH_INDEX_URL=%TORCH_BASE_URL%/%CUDA_VER%"
+  set "ONNX_PACKAGE=onnxruntime-gpu"
+)
+
+echo.
+echo ==========================================
+echo Configuration Selected:
+echo   Mode:         %VENV_NAME%
+echo   Torch URL:    %TORCH_INDEX_URL%
+echo   ONNX Package: %ONNX_PACKAGE%
+echo ==========================================
 echo.
 
 echo ------------------------------------------
@@ -87,16 +125,12 @@ set "PY_CMD="
 
 rem Prefer the launcher explicitly targeting 3.10
 py -3.10 --version >nul 2>&1
-if not errorlevel 1 (
-    set "PY_CMD=py -3.10"
-)
+if %ERRORLEVEL% EQU 0 set "PY_CMD=py -3.10"
 
 rem Fallback: check that bare "python" is exactly 3.10.x
 if not defined PY_CMD (
     python -c "import sys; sys.exit(0 if sys.version_info[0]==3 and sys.version_info[1]==10 else 1)" >nul 2>&1
-    if not errorlevel 1 (
-        set "PY_CMD=python"
-    )
+    if %ERRORLEVEL% EQU 0 set "PY_CMD=python"
 )
 
 if not defined PY_CMD (
@@ -131,8 +165,8 @@ if not exist "%VENV_NAME%" (
 )
 
 echo Activating virtual environment "%VENV_NAME%"...
-call "%VENV_NAME%\Scripts\activate"
-if errorlevel 1 (
+call "%VENV_NAME%\Scripts\activate.bat"
+if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Failed to activate virtual environment.
     goto end
 )
@@ -142,6 +176,18 @@ echo Step 3: Install / update dependencies
 echo ------------------------------------------
 echo.
 
+echo Checking for FFmpeg...
+where ffmpeg >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo WARNING: FFmpeg not found on PATH.
+    echo audio-separator and demucs require FFmpeg to function.
+    echo Please install FFmpeg and add it to your PATH, or some features may crash.
+    echo.
+    if not defined CI pause
+) else (
+    echo FFmpeg found.
+)
+
 rem ------------------------------------------
 rem Setup Install Command (uv vs pip)
 rem ------------------------------------------
@@ -149,67 +195,31 @@ rem Default to standard pip
 set "PIP_INSTALL_CMD=python -m pip install"
 
 echo Checking for 'uv' (fast package installer)...
-rem Try to install uv into the venv. It is very small and speeds up the rest significantly.
 python -m pip install uv >nul 2>&1
-if not errorlevel 1 (
+if %ERRORLEVEL% EQU 0 (
     echo 'uv' installed successfully. Using uv for fast installation.
     set "PIP_INSTALL_CMD=uv pip install"
 ) else (
     echo 'uv' installation failed or skipped. Falling back to standard pip.
     echo Upgrading pip...
-    python -m pip install --upgrade pip
+    python -m pip install --upgrade pip >nul
 )
-
-rem ------------------------------------------
-rem Select Torch/ONNX Targets
-rem ------------------------------------------
-echo.
-echo Choose CPU vs GPU Configuration...
-set "TORCH_INDEX_URL="
-set "ONNX_PACKAGE=onnxruntime"
-
-if defined ARG_GPU (
-    set "TORCH_INDEX_URL=%TORCH_BASE_URL%/%CUDA_VER%"
-    set "ONNX_PACKAGE=onnxruntime-gpu"
-) else (
-    if defined ARG_CPU (
-        set "TORCH_INDEX_URL=%TORCH_BASE_URL%/cpu"
-    ) else (
-        call :select_torch_index
-    )
-)
-
-rem Double check: if select_torch_index set the URL to cuda, we must switch ONNX to gpu
-if "%TORCH_INDEX_URL%"=="%TORCH_BASE_URL%/%CUDA_VER%" (
-    set "ONNX_PACKAGE=onnxruntime-gpu"
-)
-
-echo.
-echo Target Configuration:
-echo   PyTorch URL: %TORCH_INDEX_URL%
-echo   ONNX Runtime: %ONNX_PACKAGE%
-echo.
 
 rem ------------------------------------------
 rem Install Packages
 rem ------------------------------------------
 
+echo.
 echo Installing core packages (PyQt6, soundfile)...
-%PIP_INSTALL_CMD% PyQt6 soundfile
-if errorlevel 1 goto end
+%PIP_INSTALL_CMD% PyQt6 soundfile || goto end
 
 echo.
 echo Installing PyTorch...
-%PIP_INSTALL_CMD% torch torchvision torchaudio --index-url %TORCH_INDEX_URL%
-if errorlevel 1 goto end
+%PIP_INSTALL_CMD% torch torchvision torchaudio --index-url %TORCH_INDEX_URL% || goto end
 
 echo.
 echo Installing Demucs, Audio Separator, PyInstaller, and %ONNX_PACKAGE%...
-rem IMPORTANT: We repeat --index-url here. If we don't, pip might find a newer 
-rem version of 'torch' on the public PyPi (CPU only) required by these libs 
-rem and overwrite the CUDA version we just installed.
-%PIP_INSTALL_CMD% demucs audio-separator pyinstaller %ONNX_PACKAGE% --index-url %TORCH_INDEX_URL%
-if errorlevel 1 goto end
+%PIP_INSTALL_CMD% demucs audio-separator pyinstaller %ONNX_PACKAGE% || goto end
 
 echo.
 echo Dependencies installed successfully.
@@ -255,13 +265,23 @@ if not exist "resources" (
 echo.
 echo Building EXE with PyInstaller...
 
+rem 1. Set the name first so we can use it for cleanup
 set "PYI_NAME=StemLab"
+
+rem 2. Clean up previous artifacts
+echo Cleaning previous build artifacts...
+if exist "build" rmdir /s /q "build"
+if exist "dist" rmdir /s /q "dist"
+if exist "%PYI_NAME%.spec" del "%PYI_NAME%.spec"
+
+rem 3. Check for version file and set argument accordingly
 set "PYI_VERSION_FILE="
 if exist "version_info.txt" (
-    set "PYI_VERSION_FILE=--version-file version_info.txt"
+    rem Escape the quotes around the filename
+    set "PYI_VERSION_FILE=--version-file ^\"version_info.txt^\""
 )
 
-rem Note: We explicitly quote the variables to handle spaces or empty values gracefully
+rem 4. Invoke PyInstaller.  Note: caret at end of lines must not have trailing spaces.
 pyinstaller --clean --noconsole --onefile ^
     --name "%PYI_NAME%" ^
     %PYI_VERSION_FILE% ^
@@ -278,7 +298,7 @@ pyinstaller --clean --noconsole --onefile ^
     --hidden-import="sklearn.tree._utils" ^
     main.py
 
-if errorlevel 1 (
+if %ERRORLEVEL% NEQ 0 (
     echo.
     echo ERROR: PyInstaller build failed.
     goto end
@@ -297,9 +317,15 @@ rem SUBROUTINES
 rem ==========================================
 
 :handle_existing_venv
+rem Handle an existing virtual environment based on flags or interactive prompt
 if defined ARG_RECREATE_VENV (
     echo Recreating venv because --recreate-venv was specified...
     rmdir /s /q "%VENV_NAME%"
+    if exist "%VENV_NAME%" (
+        echo ERROR: Could not remove existing venv. Is a process using it?
+        goto end
+    )
+
     set "DID_ATTEMPT_CREATE=1"
     call :create_venv
     goto :eof
@@ -325,21 +351,8 @@ goto :eof
 :create_venv
 echo Creating virtual environment "%VENV_NAME%"...
 %PY_CMD% -m venv "%VENV_NAME%"
-if errorlevel 1 (
+if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Failed to create virtual environment.
-)
-goto :eof
-
-
-:select_torch_index
-echo.
-echo PyTorch CUDA Configuration: %CUDA_VER%
-set /p CHOICE_GPU=Install GPU-accelerated PyTorch for NVIDIA - large download? [y/N]: 
-if /I "%CHOICE_GPU%"=="Y" (
-    set "TORCH_INDEX_URL=%TORCH_BASE_URL%/%CUDA_VER%"
-    set "ONNX_PACKAGE=onnxruntime-gpu"
-) else (
-    set "TORCH_INDEX_URL=%TORCH_BASE_URL%/cpu"
 )
 goto :eof
 
@@ -374,5 +387,6 @@ goto end
 
 :end
 echo.
-pause
+if not defined CI pause
 endlocal
+exit /b
