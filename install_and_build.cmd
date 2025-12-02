@@ -1,9 +1,8 @@
 @echo off
 rem -------------------------------------------------------------------
 rem StemLab setup/build script (CPU/GPU)
-rem This script is designed to be run from its own directory.  It must
-rem be saved with a .cmd extension so that CMD.EXE will reset the
-rem internal %ERRORLEVEL% after each command
+rem This script is designed to be run from SteamLab project directory.
+rem It must be saved with a .cmd extension.
 rem -------------------------------------------------------------------
 
 setlocal EnableExtensions
@@ -17,6 +16,11 @@ set "CUDA_VER=cu121"
 rem Base URL for PyTorch wheels
 set "TORCH_BASE_URL=https://download.pytorch.org/whl"
 rem ==========================================
+
+rem Define the latest stable FFmpeg version for winget installation.
+rem According to the official FFmpeg project, version 8.0.1 released on 2025-11-20
+rem is the current stable release【665507991686221†L169-L172】.
+set "FFMPEG_VERSION=8.0.1"
 
 rem Ensure we are in the directory containing this script
 cd /d "%~dp0"
@@ -35,6 +39,8 @@ set "ARG_BUILD_EXE="
 set "ARG_NO_BUILD_EXE="
 set "ARG_RECREATE_VENV="
 set "ARG_REUSE_VENV="
+set "ARG_INSTALL_FFMPEG="
+set "ARG_NO_INSTALL_FFMPEG="
 
 :parse_args
 if "%~1"=="" goto after_args
@@ -46,6 +52,8 @@ if /I "%~1"=="--build-exe"     set "ARG_BUILD_EXE=1"
 if /I "%~1"=="--no-build-exe"  set "ARG_NO_BUILD_EXE=1"
 if /I "%~1"=="--recreate-venv" set "ARG_RECREATE_VENV=1"
 if /I "%~1"=="--reuse-venv"    set "ARG_REUSE_VENV=1"
+if /I "%~1"=="--install-ffmpeg" set "ARG_INSTALL_FFMPEG=1"
+if /I "%~1"=="--no-install-ffmpeg" set "ARG_NO_INSTALL_FFMPEG=1"
 
 shift
 goto parse_args
@@ -74,6 +82,14 @@ if defined ARG_RECREATE_VENV (
   if defined ARG_REUSE_VENV (
     echo Warning: Both --recreate-venv and --reuse-venv were specified. Recreating venv.
     set "ARG_REUSE_VENV="
+  )
+)
+
+rem Resolve conflicting FFmpeg install flags
+if defined ARG_INSTALL_FFMPEG (
+  if defined ARG_NO_INSTALL_FFMPEG (
+    echo Warning: Both --install-ffmpeg and --no-install-ffmpeg were specified. Installing FFmpeg.
+    set "ARG_NO_INSTALL_FFMPEG="
   )
 )
 
@@ -178,14 +194,13 @@ echo.
 
 echo Checking for FFmpeg...
 where ffmpeg >nul 2>&1
-if %ERRORLEVEL% NEQ 0 (
+if %ERRORLEVEL% EQU 0 (
+    echo FFmpeg found.
+) else (
     echo WARNING: FFmpeg not found on PATH.
     echo audio-separator and demucs require FFmpeg to function.
-    echo Please install FFmpeg and add it to your PATH, or some features may crash.
     echo.
-    if not defined CI pause
-) else (
-    echo FFmpeg found.
+    call :handle_ffmpeg_missing
 )
 
 rem ------------------------------------------
@@ -195,22 +210,14 @@ rem Default to standard pip
 set "PIP_INSTALL_CMD=python -m pip install"
 
 echo Checking for 'uv' (fast package installer)...
-uv --version >nul 2>&1
+python -m pip install uv >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
-    echo 'uv' is already installed. Using uv for fast installation.
+    echo 'uv' installed successfully. Using uv for fast installation.
     set "PIP_INSTALL_CMD=uv pip install"
 ) else (
-    echo 'uv' not found. Attempting to install 'uv'...
-    python -m pip install uv >nul 2>&1
-    uv --version >nul 2>&1
-    if %ERRORLEVEL% EQU 0 (
-        echo 'uv' installed successfully. Using uv for fast installation.
-        set "PIP_INSTALL_CMD=uv pip install"
-    ) else (
-        echo 'uv' installation failed or skipped. Falling back to standard pip.
-        echo Upgrading pip...
-        python -m pip install --upgrade pip >nul
-    )
+    echo 'uv' installation failed or skipped. Falling back to standard pip.
+    echo Upgrading pip...
+    python -m pip install --upgrade pip >nul
 )
 
 rem ------------------------------------------
@@ -251,7 +258,7 @@ if not defined DO_BUILD_EXE (
     echo.
     echo Skipping PyInstaller build.
     echo To run from source:
-    echo   call %VENV_NAME%\Scripts\activate.bat
+    echo   call %VENV_NAME%\Scripts\activate
     echo   python main.py
     goto end
 )
@@ -286,7 +293,7 @@ rem 3. Check for version file and set argument accordingly
 set "PYI_VERSION_FILE="
 if exist "version_info.txt" (
     rem Escape the quotes around the filename
-    set "PYI_VERSION_FILE=--version-file ^"version_info.txt^""
+    set "PYI_VERSION_FILE=--version-file ^\"version_info.txt^\""
 )
 
 rem 4. Invoke PyInstaller.  Note: caret at end of lines must not have trailing spaces.
@@ -372,6 +379,51 @@ if /I "%CHOICE_BUILD%"=="Y" set "DO_BUILD_EXE=1"
 goto :eof
 
 
+:handle_ffmpeg_missing
+rem Decide how to handle missing FFmpeg based on flags or interactive prompt.
+rem If --install-ffmpeg is supplied, attempt installation automatically.
+if defined ARG_INSTALL_FFMPEG (
+    echo Installing FFmpeg via winget...
+    call :install_ffmpeg
+    goto :eof
+)
+rem If --no-install-ffmpeg is supplied, skip installation.
+if defined ARG_NO_INSTALL_FFMPEG (
+    echo Skipping FFmpeg installation due to flag. You should install it manually or via a package manager.
+    goto :eof
+)
+rem In CI or non-interactive environments, do not prompt.
+if defined CI (
+    echo Non-interactive environment detected. Skipping FFmpeg installation prompt.
+    goto :eof
+)
+rem Otherwise ask the user interactively.
+set /p CHOICE_FFMPEG=Install FFmpeg now via winget? [y/N]: 
+if /I "%CHOICE_FFMPEG%"=="Y" (
+    call :install_ffmpeg
+) else (
+    echo Not installing FFmpeg. Some features may crash until FFmpeg is installed.
+)
+goto :eof
+
+:install_ffmpeg
+rem Check if winget is available
+winget --version >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: winget is not available on this system. Please install FFmpeg manually or install winget first.
+    goto :eof
+)
+echo Attempting to install FFmpeg version %FFMPEG_VERSION% using winget...
+rem Use silent mode and accept agreements for unattended installation
+winget install ffmpeg --version %FFMPEG_VERSION% --silent --accept-package-agreements --accept-source-agreements --disable-interactivity
+if %ERRORLEVEL% EQU 0 (
+    echo FFmpeg installation completed. Ensure the ffmpeg executable directory is in your PATH.
+) else (
+    echo ERROR: winget failed to install FFmpeg. Install it manually or fix winget issues.
+)
+goto :eof
+
+
 :show_help
 echo.
 echo Usage: %~nx0 [options]
@@ -384,6 +436,8 @@ echo   --reuse-venv      Reuse an existing virtualenv if it exists.
 echo   --build-exe       Build StemLab.exe with PyInstaller.
 echo   --no-build-exe    Do not build EXE; just set up environment.
 echo   --help            Show this help.
+echo   --install-ffmpeg     Automatically install FFmpeg via winget if missing.
+echo   --no-install-ffmpeg  Do not install FFmpeg even if it is missing.
 echo.
 echo Without --cpu/--gpu, you will be prompted interactively for CPU vs GPU.
 echo.
