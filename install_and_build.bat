@@ -23,19 +23,43 @@ set "ARG_REUSE_VENV="
 :parse_args
 if "%~1"=="" goto after_args
 
-if /I "%~1"=="--help"         goto show_help
-if /I "%~1"=="--cpu"          set "ARG_CPU=1"
-if /I "%~1"=="--gpu"          set "ARG_GPU=1"
-if /I "%~1"=="--build-exe"    set "ARG_BUILD_EXE=1"
-if /I "%~1"=="--no-build-exe" set "ARG_NO_BUILD_EXE=1"
+if /I "%~1"=="--help"          goto show_help
+if /I "%~1"=="--cpu"           set "ARG_CPU=1"
+if /I "%~1"=="--gpu"           set "ARG_GPU=1"
+if /I "%~1"=="--build-exe"     set "ARG_BUILD_EXE=1"
+if /I "%~1"=="--no-build-exe"  set "ARG_NO_BUILD_EXE=1"
 if /I "%~1"=="--recreate-venv" set "ARG_RECREATE_VENV=1"
-if /I "%~1"=="--reuse-venv"   set "ARG_REUSE_VENV=1"
+if /I "%~1"=="--reuse-venv"    set "ARG_REUSE_VENV=1"
 
 shift
 goto parse_args
 
 :after_args
 echo.
+
+rem ------------------------------------------
+rem Resolve conflicting flags (nitpicks)
+rem ------------------------------------------
+if defined ARG_CPU (
+  if defined ARG_GPU (
+    echo Warning: Both --cpu and --gpu were specified. Using GPU settings.
+    set "ARG_CPU="
+  )
+)
+
+if defined ARG_BUILD_EXE (
+  if defined ARG_NO_BUILD_EXE (
+    echo Warning: Both --build-exe and --no-build-exe were specified. Will build EXE.
+    set "ARG_NO_BUILD_EXE="
+  )
+)
+
+if defined ARG_RECREATE_VENV (
+  if defined ARG_REUSE_VENV (
+    echo Warning: Both --recreate-venv and --reuse-venv were specified. Recreating venv.
+    set "ARG_REUSE_VENV="
+  )
+)
 
 echo ------------------------------------------
 echo Step 1: Locate Python 3.10
@@ -55,8 +79,8 @@ if not defined PY_CMD (
 )
 
 if not defined PY_CMD (
-    echo "ERROR: Python 3.10 not found."
-    echo "Make sure either 'py -3.10' or 'python' (3.10) is available on PATH."
+    echo ERROR: Python 3.10 not found.
+    echo Make sure that "py -3.10" or "python" runs Python 3.10 and is on PATH.
     goto end
 )
 
