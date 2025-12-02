@@ -278,7 +278,7 @@ rem 3. Check for version file and set argument accordingly
 set "PYI_VERSION_FILE="
 if exist "version_info.txt" (
     rem Escape the quotes around the filename
-    set "PYI_VERSION_FILE=--version-file ^\"version_info.txt^\""
+    set "PYI_VERSION_FILE=--version-file ^"version_info.txt^""
 )
 
 rem 4. Invoke PyInstaller.  Note: caret at end of lines must not have trailing spaces.
