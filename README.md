@@ -79,7 +79,7 @@ If you want to modify the code or build it yourself, follow these steps:
 3.  **Run the Build Script**:
     We provide a robust build script that handles virtual environment creation and dependency installation automatically.
 
-    Double-click **`install_and_build.bat`**.
+    Double-click **`install_and_build.cmd`**.
 
     This script will:
     *   Create a local virtual environment (`venv_cpu` or `venv_gpu` depending on your selection).
@@ -89,7 +89,7 @@ If you want to modify the code or build it yourself, follow these steps:
 4.  **Run the App**:
     *   **Compiled EXE**: Check the `dist` folder for `StemLab.exe`.
 
-Run `install_and_build.bat --help` for a full list of installation options.
+Run `install_and_build.cmd --help` for a full list of installation options.
 
 ## Credits
 
