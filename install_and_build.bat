@@ -93,7 +93,7 @@ if not errorlevel 1 (
 
 rem Fallback: check that bare "python" is exactly 3.10.x
 if not defined PY_CMD (
-    python -c "import sys; import sys; sys.exit(0 if sys.version_info[0]==3 and sys.version_info[1]==10 else 1)" >nul 2>&1
+    python -c "import sys; sys.exit(0 if sys.version_info[0]==3 and sys.version_info[1]==10 else 1)" >nul 2>&1
     if not errorlevel 1 (
         set "PY_CMD=python"
     )
