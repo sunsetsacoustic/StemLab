@@ -243,7 +243,7 @@ if not defined DO_BUILD_EXE (
     echo.
     echo Skipping PyInstaller build.
     echo To run from source:
-    echo   call %VENV_NAME%\Scripts\activate
+    echo   call %VENV_NAME%\Scripts\activate.bat
     echo   python main.py
     goto end
 )
