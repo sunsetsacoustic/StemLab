@@ -82,7 +82,7 @@ If you want to modify the code or build it yourself, follow these steps:
     Double-click **`install_and_build.bat`**.
 
     This script will:
-    *   Create a local virtual environment (`venv_cpu`).
+    *   Create a local virtual environment (`venv_cpu` or `venv_gpu` depending on your selection).
     *   Install all required libraries (`PyQt6`, `torch`, `demucs`, `audio-separator`, etc.).
     *   Package the application into a single `.exe` file using PyInstaller.
 
