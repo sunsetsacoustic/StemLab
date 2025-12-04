@@ -1,10 +1,17 @@
 # StemLab v1.0
 
-**Professional-grade AI stem separation. Local. Unlimited. One-time payment.**
+**Professional-grade AI stem separation. Local. Unlimited.**
 
 StemLab is a powerful, local Windows application for separating audio tracks into individual stems (Vocals, Drums, Bass, Other). It leverages state-of-the-art AI models (Demucs and MDX-Net) to deliver studio-quality results without monthly subscriptions or cloud upload limits.
 
 ![StemLab Splash](resources/splash.png)
+
+
+Demo: https://youtu.be/y9qL7bGh40Y 
+
+Discord: https://discord.gg/2pF8ej5xbt
+
+VirusTotal for Exe: https://www.virustotal.com/gui/file/ffb5e465ced2c8bf6b7c56b6d6450c709caa87c0890baa1dc468a247a971c675?nocache=1
 
 ## Features
 
@@ -25,6 +32,24 @@ StemLab is a powerful, local Windows application for separating audio tracks int
     *   **GPU Acceleration**: Auto-detects NVIDIA GPUs for faster processing. (Testing)
     *   **Smart Queue**: Manage your jobs with progress bars and cancellation.
 
+## 🚀 Coming Soon – StemLab Pro Roadmap (2025)
+
+These are already in active development and dropping over the next few weeks:
+
+| Feature                        | Status         | Expected |
+|-------------------------------|----------------|----------|
+| **Stem Vault** – searchable private library of every stem you’ve ever made (BPM, key, tags, instant preview) | Building       | December 2025 |
+| **Smart Stem Organizer** – auto-creates perfect folders + one-click FL Studio / Ableton project files with stems pre-loaded | Building       | December 2025 |
+| **Drum Split Mode** – Kick | Snare | Hi-hat | Cymbals (Bandit v2 / DrumDemucs) | Building       | December 2025 |
+| **Built-in waveform player** – audition any stem without leaving the app | Building       | December 2025 |
+| **One-click TikTok / Reels export** – 60-second hook with clean vocal + beat | Building       | December 2025 |
+| **GPU acceleration (full)** – 20–50× real-time on NVIDIA cards | Testing        | January 2026 |
+| **Mac & Linux versions**      | Planned        | Q1 2026 |
+
+
+
+Star ⭐ and watch the repo to get notified the second these drop.
+
 ## Requirements
 
 *   **OS**: Windows 10 or 11 (64-bit)
@@ -35,7 +60,7 @@ StemLab is a powerful, local Windows application for separating audio tracks int
 ## Installation
 
 ### Option 1: Pre-built Executable
-Purchase the ready-to-run `StemLab.exe` from **[Gumroad](https://justinmurray99.gumroad.com/l/StemLab)**.
+Purchase the ready-to-run `StemLab.exe` from **[Gumroad](https://justinmurray99.gumroad.com/l/StemLab) or [KoFi](https://ko-fi.com/s/1cbb0a5041)**.
 (Instant download, no setup required).
 
 ### Option 2: Build from Source
@@ -54,16 +79,26 @@ If you want to modify the code or build it yourself, follow these steps:
 3.  **Run the Build Script**:
     We provide a robust build script that handles virtual environment creation and dependency installation automatically.
 
-    Double-click **`rebuild_cpu_robust.bat`**.
-
     This script will:
-    *   Create a local virtual environment (`venv_cpu`).
+    *   Create a local virtual environment (`venv_cpu` or `venv_gpu` depending on your selection).
     *   Install all required libraries (`PyQt6`, `torch`, `demucs`, `audio-separator`, etc.).
-    *   Package the application into a single `.exe` file using PyInstaller.
+    *   Package the application into a single executable file using PyInstaller.
+
+    **Windows:**
+
+        Double-click **`install_and_build.cmd`**.
+
+    ** Linux/Mac: **
+
+        ```
+        chmod +x install_and_build.sh
+        ./install_and_build.sh
+        ```
 
 4.  **Run the App**:
-    *   **From Source**: Double-click `run_cpu.bat`.
-    *   **Compiled EXE**: Check the `dist` folder for `StemLab.exe`.
+    *   **Compiled Executable**: Check the `dist` folder for `StemLab.exe` (Windows) or `StemLab` (Mac/Linux).
+
+Run `install_and_build.cmd --help` or `./install_and_build.sh --help` for a full list of installation options.
 
 ## Credits
 
